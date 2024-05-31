@@ -1,0 +1,109 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "resources": [
+      {
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2021-03-01",
+        "name": "myContainerGroup",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "containers": [
+            {
+              "name": "myPythonApp",
+              "properties": {
+                "image": "yourdockerhubaccount/your-python-app:latest",
+                "resources": {
+                  "requests": {
+                    "cpu": 1,
+                    "memoryInGb": 1.5
+                  }
+                },
+                "environmentVariables": [
+                  {
+                    "name": "MONGO_URI",
+                    "value": "[concat('mongodb://', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', 'myMongoDBAccount'), '2021-04-15').primaryMasterKey, '@myMongoDBAccount.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb')]"
+                  }
+                ],
+                "ports": [
+                  {
+                    "port": 80
+                  }
+                ]
+              }
+            }
+          ],
+          "osType": "Linux",
+          "ipAddress": {
+            "type": "Public",
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 80
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts",
+        "apiVersion": "2021-04-15",
+        "name": "myMongoDBAccount",
+        "location": "[resourceGroup().location]",
+        "kind": "MongoDB",
+        "properties": {
+          "consistencyPolicy": {
+            "defaultConsistencyLevel": "Session"
+          },
+          "locations": [
+            {
+              "locationName": "[resourceGroup().location]",
+              "failoverPriority": 0
+            }
+          ],
+          "databaseAccountOfferType": "Standard",
+          "mongoDB": {
+            "version": "3.6"
+          }
+        },
+        "tags": {}
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts/mongodbDatabases",
+        "apiVersion": "2021-04-15",
+        "name": "[concat('myMongoDBAccount/', 'myMongoDatabase')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DocumentDB/databaseAccounts', 'myMongoDBAccount')]"
+        ],
+        "properties": {
+          "resource": {
+            "id": "myMongoDatabase"
+          }
+        }
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts/mongodbDatabases/collections",
+        "apiVersion": "2021-04-15",
+        "name": "[concat('myMongoDBAccount/myMongoDatabase/', 'myMongoCollection')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DocumentDB/databaseAccounts/mongodbDatabases', 'myMongoDBAccount', 'myMongoDatabase')]"
+        ],
+        "properties": {
+          "resource": {
+            "id": "myMongoCollection"
+          }
+        }
+      }
+    ],
+    "outputs": {
+      "containerInstanceURL": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', 'myContainerGroup')).ipAddress.ip]"
+      },
+      "mongoDBConnectionString": {
+        "type": "string",
+        "value": "[concat('mongodb://', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', 'myMongoDBAccount'), '2021-04-15').primaryMasterKey, '@myMongoDBAccount.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb')]"
+      }
+    }
+  }
+  
