@@ -1,5 +1,5 @@
-apiVersion: 2019-12-01
-location: eastus
+apiVersion: '2021-03-01'
+location: westeu
 name: myContainerGroup
 properties:
   containers:
