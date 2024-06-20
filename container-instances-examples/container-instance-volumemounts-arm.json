@@ -1,0 +1,54 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "resources": [
+      {
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2019-12-01",
+        "location": "[resourceGroup().location]",
+        "name": "myContainerGroup",
+        "properties": {
+          "containers": [
+            {
+              "name": "myContainer",
+              "properties": {
+                "image": "nginx:latest",
+                "resources": {
+                  "requests": {
+                    "cpu": 1,
+                    "memoryInGb": 1.5
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "myAzureFileVolume",
+                    "mountPath": "/mnt/azure"
+                  }
+                ]
+              }
+            }
+          ],
+          "osType": "Linux",
+          "volumes": [
+            {
+              "name": "myAzureFileVolume",
+              "azureFile": {
+                "shareName": "myfileshare",
+                "storageAccountName": "mystorageaccount",
+                "storageAccountKey": "[parameters('storageAccountKey')]"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "storageAccountKey": {
+        "type": "securestring",
+        "metadata": {
+          "description": "The storage account key"
+        }
+      }
+    }
+  }
+  
